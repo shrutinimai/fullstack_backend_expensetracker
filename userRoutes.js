@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
+const bcrypt = require("bcrypt");
 
 router.post("/signup", async (req, res) => {
     const { name, email, password } = req.body;
@@ -9,10 +10,21 @@ router.post("/signup", async (req, res) => {
         const existing_User = await User.findOne({ where: { email } });
 
         if (existing_User) {
-            return res.status(400).json({ message: "User already exists" });
+            return res.status(400).json(
+                { message: "User already exists" }
+            );
         }
 
-        const newUser = await User.create({ name, email, password });
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        const newUser = await User.create(
+            { 
+            name, 
+            email, 
+            password: hashedPassword 
+        }
+    );
 
         res.status(201).json({ message: "User created successfully", user: newUser });
 
@@ -25,13 +37,21 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const user = await User.findOne({ where: { email } });
+        const user = await User.findOne(
+            { where: { email } 
+        }
+    );
 
         if (!user) {
-            return res.status(404).json({ message: "User doesn't exist" });
+            return res.status(404).json(
+                { message: "User doesn't exist" }
+
+            );
         }
 
-        if (user.password !== password) {
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
             return res.status(401).json({ message: "Incorrect password" });
         }
 
@@ -43,3 +63,4 @@ router.post("/login", async (req, res) => {
 });
 
 module.exports = router;
+
