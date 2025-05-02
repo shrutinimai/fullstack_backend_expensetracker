@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { Op, literal } = require("sequelize");
 
 exports.signup = async (req, res) => {
     try {
@@ -114,13 +115,11 @@ exports.updateExternalCustomerId = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
-// Add this in your user controller
 exports. getUserProfile = async (req, res) => {
-    
-
+     
+ 
     try {
-        const user = await User.findByPk(req.user.id); // assuming you have user info from JWT
-
+        const user = await User.findByPk(req.user.id); 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -128,7 +127,7 @@ exports. getUserProfile = async (req, res) => {
         res.status(200).json({
             name: user.name,
             email: user.email,
-            isPremiumUser: user.isPremiumUser,  // send the premium status
+            isPremiumUser: user.isPremiumUser,  
         });
     } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -136,3 +135,31 @@ exports. getUserProfile = async (req, res) => {
     }
 };
 
+exports.getLeaderboard = async (req, res) => {
+    try {
+       // if (req.user.isPremiumUser !== "Yes") 
+       if (!req.user.isPremiumUser){
+            return res.status(403).json({ message: "Access denied: Premium users only" });
+          }
+      
+      const leaderboard = await User.findAll({
+        attributes: [
+          'name',
+          [literal('IFNULL(total_expenses, 0)'), 'total_expenses'] 
+        ],
+        order: [[literal('total_expenses'), 'DESC']],
+        where: {
+          total_expenses: {
+            [Op.gt]: 0
+          }
+        },
+       // limit: 5 
+      });
+  
+      res.status(200).json(leaderboard);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      res.status(500).json({ message: "Failed to fetch leaderboard" });
+    }
+  };
+  

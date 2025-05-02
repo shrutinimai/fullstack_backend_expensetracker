@@ -1,12 +1,16 @@
 const express = require("express");
 const router = express.Router();
-const { signup, login,refresh,getUserProfile } = require("../controllers/userController");
+const { signup, login,refresh,getUserProfile,getLeaderboard } = require("../controllers/userController");
+const auth = require("../middleware/auth");
 
 router.post("/signup", signup);
 router.post("/login", login);
 
 router.post("/refresh", refresh);
-// Add this route in your userRoutes.js
-router.get("/profile",getUserProfile); // assuming 'auth' middleware protects this route
+router.get("/profile",getUserProfile); 
+
+router.get("/leaderboard",auth,  getLeaderboard);  // Route to fetch leaderboard
+
+
 
 module.exports = router;

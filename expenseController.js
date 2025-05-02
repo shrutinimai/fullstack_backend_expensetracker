@@ -1,6 +1,5 @@
 const Expense = require("../models/Expense");
-const User = require("../models/User"); // ✅ You must include this
-
+const User = require("../models/User"); 
 exports.addExpense = async (req, res) => {
     try {
         console.log("request received:", req.body);
@@ -19,6 +18,10 @@ exports.addExpense = async (req, res) => {
             userId: req.user.id,  
         });
 
+        const user = await User.findByPk(req.user.id);
+    user.total_expenses = parseFloat(user.total_expenses) + parseFloat(money); 
+    await user.save(); 
+
         console.log("Expense Added:", newExpense);
         res.status(201).json(newExpense);
 
@@ -33,7 +36,7 @@ exports.getExpenses = async (req, res) => {
         const expenses = await Expense.findAll({
             where: { userId: req.user.id }
         });
-        const user = await User.findByPk(req.user.id);  // ✅ Fetch user info
+        const user = await User.findByPk(req.user.id);  
 
         res.status(200).json({
            expenses,
@@ -61,6 +64,10 @@ exports.deleteExpense = async (req, res) => {
             return res.status(403).json({ message: "Unauthorized" });
         }
 
+        const user = await User.findByPk(req.user.id);
+        user.total_expenses = parseFloat(user.total_expenses) - parseFloat(money); // <-- Subtract expense
+        await user.save();
+    
         await expense.destroy();
         res.status(200).json({ message: "Expense deleted successfully" });
 
